@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install SG1 v4 Desktop
+Comment=Install SG1 v4 on Raspberry Pi OS Desktop 64-bit
+Exec=bash -c 'here="$(cd "$(dirname "$1")" && pwd)"; for dir in "$here" "$here/sg1_v4_pi5_first_boot_tmc2209" "$HOME/Desktop/sg1_v4_pi5_first_boot_tmc2209"; do if [ -f "$dir/install_desktop.sh" ]; then cd "$dir"; chmod +x ./install_desktop.sh; ./install_desktop.sh; echo; echo "Installer finished. Press Enter to close."; read _; exit 0; fi; done; echo "Cannot find install_desktop.sh next to this launcher."; echo "Put this launcher next to the sg1_v4_pi5_first_boot_tmc2209 folder, then run it again."; read _; exit 1' dummy %k
+Icon=system-software-install
+Terminal=true
+Categories=Utility;

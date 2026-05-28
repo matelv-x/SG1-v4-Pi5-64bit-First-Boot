@@ -1,0 +1,64 @@
+Pi 5 custom hardware patch included in this ZIP
+================================================
+
+This ZIP is based on the original SG1_v4 first-install package, with the Pi 5 hardware changes already integrated.
+
+Confirmed hardware mapping:
+
+I2C:
+- PCA9685 servo board: 0x40
+- Adafruit MotorKit HAT: 0x60
+- 0x70 may appear in i2cdetect as the PCA9685 all-call address
+
+Servo chevrons:
+- Chevron 1 servo -> PCA9685 channel 0
+- Chevron 2 servo -> PCA9685 channel 1
+- Chevron 3 servo -> PCA9685 channel 2
+- Chevron 4 servo -> PCA9685 channel 3
+- Chevron 5 servo -> PCA9685 channel 4
+- Chevron 6 servo -> PCA9685 channel 5
+- Chevron 7 servo -> PCA9685 channel 6
+
+Stepper:
+- Symbol ring stepper -> MotorKit 0x60 stepper1 / M1+M2
+
+Wormhole NeoPixel strip:
+- DATA -> BCM12 / physical pin 32 / board.D12
+
+Chevron LEDs:
+- Chevron 1 LED -> BCM21 / physical pin 40
+- Chevron 2 LED -> BCM16 / physical pin 36
+- Chevron 3 LED -> BCM20 / physical pin 38
+- Chevron 4 LED -> BCM26 / physical pin 37
+- Chevron 5 LED -> BCM6  / physical pin 31
+- Chevron 6 LED -> BCM13 / physical pin 33
+- Chevron 7 LED -> BCM19 / physical pin 35
+- Chevron 8 LED -> BCM23 / physical pin 16
+- Chevron 9 LED -> BCM25 / physical pin 22
+
+Files changed:
+- requirements.txt
+- requirements_minimum.txt
+- install/functions.sh
+- classes/StargateMilkyWay/electronics.py
+- classes/StargateMilkyWay/electronics_pca9685_servo.py
+
+After first boot / install, check:
+
+  i2cdetect -y 1
+
+Expected addresses:
+
+  0x40, 0x60, and often 0x70
+
+Check service:
+
+  sudo systemctl status stargate.service --no-pager
+
+Check detected hardware:
+
+  strings /home/pi/sg1_v4/logs/milkyway.log | grep -i "Hardware Detected\|NeoPixel\|PCA9685\|MotorKit" | tail -n 50
+
+Expected hardware line:
+
+  Hardware Detected: Pi5 PCA9685 Servo Chevrons + MotorKit Stepper1 + GPIO Chevron LEDs + NeoPixel D12
