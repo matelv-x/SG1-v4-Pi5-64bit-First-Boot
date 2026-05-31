@@ -98,6 +98,23 @@ Calibration requirements by hardware profile:
 - **Profile 2: Servo chevrons + 1 x Motor HAT stepper** - calibrate the servo chevrons. The glyph-ring stepper remains on the original Motor HAT path, so the original ring calibration/settings normally apply.
 - **Profile 3: Servo chevrons + TMC2209 stepper** - calibrate both the servo chevrons and the glyph-ring stepper/TMC2209 settings.
 
+## Software update safety by hardware profile
+
+The original SG1 software updater can replace application files from Git. This
+is appropriate for the unmodified original hardware profile, but it can
+overwrite Pi 5 hardware-specific changes used by the servo profiles.
+
+- **Profile 1: Original 3 x Motor HAT** - software updates remain enabled and
+  visible in the web Configuration page. The installer also configures the Git
+  safe-directory entry required by the root-run `stargate.service`.
+- **Profile 2: Servo chevrons + 1 x Motor HAT stepper** - software updates are
+  automatically set to `False` and hidden in the web Configuration page.
+- **Profile 3: Servo chevrons + TMC2209 stepper** - software updates are
+  automatically set to `False` and hidden in the web Configuration page.
+
+For profiles 2 and 3, apply future Pi 5 updates through tested installer
+packages instead of enabling the original Git updater.
+
 Before calibration, make a quick backup:
 
 ```bash

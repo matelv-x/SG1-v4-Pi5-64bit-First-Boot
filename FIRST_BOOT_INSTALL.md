@@ -64,6 +64,15 @@ The installer asks which hardware is connected:
 2. `servo_motorhat` - PCA9685 servo chevrons + 1 x Motor HAT stepper.
 3. `servo_tmc2209` - PCA9685 servo chevrons + TMC2209 stepper.
 
+Software update safety:
+
+- profile `original` keeps the original Git software updater enabled and
+  visible in the web Configuration page;
+- profiles `servo_motorhat` and `servo_tmc2209` automatically set the original
+  Git software updater to `False` and hide it in the web Configuration page;
+- use tested Pi 5 installer packages for future updates to the modified servo
+  profiles.
+
 The choice can also be passed directly:
 
 ```bash
