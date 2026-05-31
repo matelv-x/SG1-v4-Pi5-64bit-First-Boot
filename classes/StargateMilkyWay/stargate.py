@@ -66,7 +66,6 @@ class Stargate:
         self.dialing_log = DialingLog(self)
 
         ### Run the stargate server for incoming wormholes.
-        # LAN gates must work even when Internet/Subspace is unavailable.
         try:
             self.subspace_client_server_thread = Thread(target=SubspaceServer(self).start, daemon=True, args=())
             self.subspace_client_server_thread.start()

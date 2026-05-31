@@ -22,7 +22,6 @@ function load_address_book(){
     $("#address_book_summary").html('')
     nameLookup = {
       "fan": "Subspace Gates",
-      "lan": "LAN Gates",
       "standard": "Standard Gates",
     }
     $.each(summary, function( name, count) {

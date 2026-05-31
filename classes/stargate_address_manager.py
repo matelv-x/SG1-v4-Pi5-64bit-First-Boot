@@ -1,9 +1,6 @@
 from ast import literal_eval
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from ipaddress import ip_network
 import json
-from threading import Thread
 import requests
 
 from stargate_address_book import StargateAddressBook
@@ -24,8 +21,8 @@ class StargateAddressManager:
 
         self.known_planets = self.address_book.get_standard_gates()
 
-        ### Retrieve and merge all fan gates, local and in-DB
-        self.fan_gates = self.address_book.get_fan_and_lan_addresses() ### Stargate fan-made gate addresses
+        ### Retrieve all fan gates
+        self.fan_gates = self.address_book.get_fan_gates() ### Stargate fan-made gate addresses
 
         self.validator = StargateAddressValidator()
 
@@ -35,11 +32,6 @@ class StargateAddressManager:
         if self.cfg.get("fan_gate_refresh_enable"):
             update_interval = self.cfg.get("fan_gate_refresh_interval")
             stargate.app.schedule.every(update_interval).minutes.do( self.update_fan_gates_from_api )
-
-        # Automatic LAN discovery is intentionally disabled. The network scan can
-        # briefly destabilize Wi-Fi on some Pi/Desktop installs; use langate.sh
-        # when LAN gates need to be refreshed.
-        self.lan_discovery_interval = 0
 
     def get_book(self):
         return self.address_book
@@ -98,97 +90,6 @@ class StargateAddressManager:
 
         return self.fan_gates
 
-    def start_lan_gate_discovery(self):
-        discovery_thread = Thread(target=self.update_lan_gates_from_network, daemon=True)
-        discovery_thread.start()
-
-    def update_lan_gates_from_network(self):
-        """
-        Discover Stargates on the local LAN without requiring Internet/Subspace.
-        Found gates are stored as LAN gates, so they take priority over public Fan
-        Gate records with the same symbol address.
-        """
-        local_ip = self.net_tools.get_ip_by_interface_list(['wlan0', 'eth0', 'en0', 'en1'])
-        if not local_ip:
-            self.log.log("LAN Gate Discovery: no LAN IP found")
-            return {}
-
-        try:
-            network = ip_network(f"{local_ip}/24", strict=False)
-        except ValueError as exc:
-            self.log.log(f"LAN Gate Discovery: invalid local network for {local_ip}: {exc}")
-            return {}
-
-        port = self.cfg.get("control_api_server_port")
-        found = {}
-        hosts = [str(host) for host in network.hosts() if str(host) != local_ip]
-
-        self.log.log(f"LAN Gate Discovery: scanning {network} on port {port}")
-        with ThreadPoolExecutor(max_workers=32) as executor:
-            future_to_ip = {
-                executor.submit(self._probe_lan_stargate, ip_addr, port): ip_addr
-                for ip_addr in hosts
-            }
-            for future in as_completed(future_to_ip):
-                gate = future.result()
-                if not gate:
-                    continue
-
-                name = gate["name"]
-                found[name] = gate
-                self.address_book.set_lan_gate(
-                    name,
-                    gate["gate_address"],
-                    gate["ip_address"],
-                    gate["is_black_hole"],
-                )
-
-        offline = []
-        lan_gates = self.address_book.get_lan_gates()
-        for name, gate in lan_gates.items():
-            if name in found:
-                continue
-            if gate.get("is_gate_online") != "0":
-                gate["is_gate_online"] = "0"
-                offline.append(name)
-
-        if offline:
-            self.address_book.datastore.set("lan_gates", lan_gates)
-            self.log.log("LAN Gate Discovery: marked offline: " + ", ".join(sorted(offline)))
-
-        if found:
-            self.log.log(f"LAN Gate Discovery: found {len(found)} gate(s): {', '.join(sorted(found.keys()))}")
-        else:
-            self.log.log("LAN Gate Discovery: no local gates found")
-
-        return found
-
-    def _probe_lan_stargate(self, ip_addr, port):
-        url = f"http://{ip_addr}:{port}/get/system_info"
-        try:
-            response = requests.get(url, timeout=2.0)
-            if response.status_code != 200:
-                return None
-            data = response.json()
-        except (requests.RequestException, ValueError, json.JSONDecodeError):
-            return None
-
-        gate_address = data.get("local_stargate_address")
-        if not isinstance(gate_address, list) or not 6 <= len(gate_address) <= 9:
-            return None
-        if gate_address == self.address_book.get_local_address():
-            return None
-
-        gate_name = data.get("gate_name") or f"Stargate {ip_addr}"
-        return {
-            "name": str(gate_name),
-            "gate_address": gate_address,
-            "ip_address": ip_addr,
-            "is_gate_online": "1",
-            "is_black_hole": False,
-            "type": "lan",
-        }
-
     def valid_planet(self, address):
         """
             A helper function to check if the dialed address is a valid planet address. This function excludes the
@@ -230,7 +131,7 @@ class StargateAddressManager:
         :return: True if we are dialing a fan made address, False if not.
         """
         local_address = self.address_book.get_local_address()
-        for gate_config in self.address_book.get_fan_and_lan_addresses().values():
+        for gate_config in self.address_book.get_fan_gates().values():
             try:
                 #If we dial our own local address:
                 if dialed_address[:2] == local_address[:2]:
@@ -266,7 +167,7 @@ class StargateAddressManager:
         :return: The stargate's IP address is returned as a string, or "Unknown" if not found
         """
         stargate_ip = 'Unknown'
-        for stargate_config in self.address_book.get_fan_and_lan_addresses().values():
+        for stargate_config in self.address_book.get_fan_gates().values():
             if stargate_config['ip_address'] == remote_ip:
                 return stargate_config['name'] # TODO: Should this return `gate_address`?
         return str(stargate_ip) # If the gate address of the IP was not found
@@ -279,16 +180,9 @@ class StargateAddressManager:
         :param known_fan_made_stargates: This is the dictionary of the known stargates
         :return: The IP address is returned as a string.
         """
-        if len(stargate_address) > 1:
-            # LAN entries must win over public Fan Gates when both share the same
-            # symbol address, otherwise local calls can be routed over Subspace.
-            for stargate_config in self.address_book.get_lan_gates().values():
-                if stargate_address[0:2] == stargate_config['gate_address'][0:2]:
-                    return stargate_config['ip_address']
-
-            for stargate_config in self.address_book.get_fan_gates().values():
-                if stargate_address[0:2] == stargate_config['gate_address'][0:2]:
-                    return stargate_config['ip_address']
+        for stargate_config in self.address_book.get_fan_gates().values():
+            if len(stargate_address) > 1 and stargate_address[0:2] == stargate_config['gate_address'][0:2]:
+                return stargate_config['ip_address']
 
         self.log.log( f'Unable to get IP for {stargate_address}')
         return None
@@ -300,7 +194,7 @@ class StargateAddressManager:
         :param IP: the IP address as a string
         :return: The planet/stargate name is returned as a string.
         """
-        for gate_name, config in self.address_book.get_fan_and_lan_addresses().items(): # pylint: disable=unused-variable
+        for gate_name, config in self.address_book.get_fan_gates().items(): # pylint: disable=unused-variable
             if config['ip_address'] == str(remote_ip):
                 return config['name']
         return 'Unknown'
@@ -309,7 +203,6 @@ class StargateAddressManager:
     def get_summary_from_book( book, omit_zeros ):
         summary = {}
         summary['fan'] = 0
-        summary['lan'] = 0
         summary['standard'] = 0
 
         for address, config in book.items(): # pylint: disable=unused-variable

@@ -305,7 +305,7 @@ install_app_files() {
 
   as_root rm -rf "$APP_DIR/web/retro" "$APP_DIR/soundfx/alarm"
   as_root chown -R "$TARGET_USER:$TARGET_GROUP" "$APP_DIR"
-  as_root chmod u+x "$APP_DIR"/scripts/*.py "$APP_DIR"/util/* "$APP_DIR"/install/*.sh "$APP_DIR"/langate.sh "$APP_DIR"/install_desktop.sh 2>/dev/null || true
+  as_root chmod u+x "$APP_DIR"/scripts/*.py "$APP_DIR"/util/* "$APP_DIR"/install/*.sh "$APP_DIR"/install_desktop.sh 2>/dev/null || true
 }
 
 install_python_venv() {

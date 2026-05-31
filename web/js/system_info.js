@@ -106,7 +106,6 @@ function updateInfo(){
       $('#pythonVersion').html(data.python_version)
       $('#fanGateLastUpdate').html(data.fan_gate_last_update)
       $('#fanGateCount').html(data.fan_gate_count)
-      $('#lanGateCount').html(data.lan_gate_count)
       $('#standardGateCount').html(data.standard_gate_count)
       $('#dialerMode').html(data.dialer_mode)
       $('#hardwareMode').html(data.hardware_mode)
