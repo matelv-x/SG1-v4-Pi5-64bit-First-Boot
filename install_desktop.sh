@@ -331,6 +331,18 @@ apply_hardware_profile() {
     "$HARDWARE_CONFIG_FIELDS"
 }
 
+configure_software_update_access() {
+  if [ "$PROFILE_ID" = "original" ]; then
+    echo "Enabling Git software updates for the original hardware profile"
+    if ! as_root git config --global --get-all safe.directory | grep -Fxq "$APP_DIR"; then
+      as_root git config --global --add safe.directory "$APP_DIR"
+    fi
+  else
+    echo "Disabling Git software updates for the modified hardware profile"
+    as_root git config --global --unset-all safe.directory "^${APP_DIR}$" 2>/dev/null || true
+  fi
+}
+
 install_systemd_service() {
   echo "Installing Stargate systemd service"
   as_root tee /etc/systemd/system/stargate.service >/dev/null <<'EOT'
@@ -500,6 +512,7 @@ install_system_packages
 configure_pi_login_if_requested
 install_app_files
 apply_hardware_profile
+configure_software_update_access
 install_python_venv
 install_systemd_service
 configure_apache

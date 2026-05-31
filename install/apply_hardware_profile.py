@@ -114,6 +114,12 @@ def main():
 
         set_record(config, "stepper_driver", stepper_driver)
         set_record(config, "stepper_use_motor_hat", stepper_use_motor_hat, hidden=True)
+        set_record(
+            config,
+            "software_update_enabled",
+            profile_id == "original",
+            hidden=profile_id != "original",
+        )
         apply_chevron_labels(config, profile_id)
 
         tmc_keys = [
