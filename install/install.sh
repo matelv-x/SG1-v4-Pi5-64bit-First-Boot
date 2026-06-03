@@ -126,7 +126,17 @@ check_hardware_profile() {
   bash "$SCRIPT_DIR/check_hardware_profile.sh" "$PROFILE_ID"
 }
 
+uses_motorhat() {
+  [ "$STEPPER_USE_MOTOR_HAT" = "true" ]
+}
+
+uses_tmc2209() {
+  [ "$STEPPER_DRIVER" = "tmc2209" ]
+}
+
 motorhat_all_off() {
+  uses_motorhat || return 0
+
   if command -v i2cset >/dev/null 2>&1; then
     as_root i2cset -y 1 0x60 0xFA 0x00 >/dev/null 2>&1 || true
     as_root i2cset -y 1 0x60 0xFB 0x00 >/dev/null 2>&1 || true
@@ -280,8 +290,25 @@ configure_software_update_access() {
 }
 
 install_systemd_service() {
-  echo "Installing Stargate systemd service with safe-off hooks"
-  as_root tee /etc/systemd/system/stargate.service >/dev/null <<'EOT'
+  local start_pre_hooks=""
+  local stop_post_hooks=""
+
+  if uses_motorhat; then
+    start_pre_hooks="${start_pre_hooks}ExecStartPre=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/motorhat_all_off.py --sleep
+"
+    stop_post_hooks="${stop_post_hooks}ExecStopPost=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/motorhat_all_off.py --sleep
+"
+  fi
+
+  if uses_tmc2209; then
+    start_pre_hooks="${start_pre_hooks}ExecStartPre=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/tmc2209_disable.py
+"
+    stop_post_hooks="${stop_post_hooks}ExecStopPost=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/tmc2209_disable.py
+"
+  fi
+
+  echo "Installing Stargate systemd service for: $PROFILE_NAME"
+  as_root tee /etc/systemd/system/stargate.service >/dev/null <<EOT
 [Unit]
 Description=BuildAStargate.com Stargate Daemon (SG1)
 Requires=multi-user.target
@@ -291,11 +318,8 @@ AllowIsolate=yes
 [Service]
 Type=simple
 WorkingDirectory=/home/pi/sg1_v4
-ExecStartPre=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/motorhat_all_off.py --sleep
-ExecStartPre=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/tmc2209_disable.py
-ExecStart=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/main.py --daemon
-ExecStopPost=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/motorhat_all_off.py --sleep
-ExecStopPost=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/scripts/tmc2209_disable.py
+${start_pre_hooks}ExecStart=/home/pi/venv_v4/bin/python /home/pi/sg1_v4/main.py --daemon
+${stop_post_hooks}
 
 [Install]
 WantedBy=multi-user.target

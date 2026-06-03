@@ -109,7 +109,7 @@ What the installer does:
   `config.htm`;
 - sets `pi` password to `sg1` and enables passwordless sudo for the `pi` user;
 - configures Apache for the web interface;
-- installs `stargate.service` with Motor HAT all-off hooks.
+- installs `stargate.service` with safe-off hooks matched to the selected hardware profile.
 
 Audio:
 
