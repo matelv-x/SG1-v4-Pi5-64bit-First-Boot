@@ -116,29 +116,26 @@ class KeyboardManager:
         self.dhd_test_active_buttons = []
 
     def handle_dhd_test(self, key):
+        if key == self.center_button_key:
+            self.stargate.dialer.hardware.set_pixel(0, 255, 0, 0) # TODO: Use colors in config
+            self.stargate.dialer.hardware.latch()
+            self.log.log('DHD Test: CENTER pressed -> center LED on')
+            return
+
         # Handle test mode here
         try:
             symbol_number = self.symbol_manager.get_symbol_key_map()[key]
             self.log.log(f'DHD Test: Pressed Key {key} --> Symbol {symbol_number}')
         except KeyError:
-            if key == self.center_button_key:
-                self.log.log(f'DHD Test: Pressed Center Button {key} --> Symbol {symbol_number}')
-                symbol_number = 0
-            else:
-                self.log.log(f'DHD Test: Key NOT RECOGNIZED {key}')
+            self.log.log(f'DHD Test: Key NOT RECOGNIZED {key}')
+            return
 
         if symbol_number not in self.dhd_test_active_buttons:
             self.dhd_test_active_buttons.append(symbol_number)
-            if symbol_number == 0:
-                self.stargate.dialer.hardware.set_pixel(symbol_number, 255, 0, 0) # TODO: Use colors in config
-                self.stargate.dialer.hardware.latch()
-            else:
-                self.stargate.dialer.hardware.set_pixel(symbol_number, 250, 117, 0) # TODO: Use colors in config
-                self.stargate.dialer.hardware.latch()
-        else:
-            self.dhd_test_active_buttons.remove(symbol_number)
-            self.stargate.dialer.hardware.clear_pixel(symbol_number)
+            self.stargate.dialer.hardware.set_pixel(symbol_number, 250, 117, 0) # TODO: Use colors in config
             self.stargate.dialer.hardware.latch()
+        else:
+            self.log.log(f'DHD Test: Ignored repeated Symbol {symbol_number}')
 
     def keypress_handler( self, key ):
         """
