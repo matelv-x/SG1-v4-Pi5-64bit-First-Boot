@@ -75,6 +75,12 @@ class KeyboardManager:
         :return: Nothing is returned, but the stargate is manipulated.
         """
 
+        try:
+            self._thread_keyboard_direct(stargate)
+        except Exception as exc: # pylint: disable=broad-exception-caught
+            stargate.log.log(f"DHD/Keyboard listener failed: {exc}")
+
+    def _thread_keyboard_direct(self, stargate):
         stargate.log.log("Initializing Keyboard listeners")
 
         # pylint: disable-next=import-outside-toplevel

@@ -277,7 +277,7 @@ install_system_packages() {
   as_root apt-get install -y \
     python3-dev python3-venv python3-pip python3-lgpio liblgpio-dev \
     libasound2-dev i2c-tools python3-smbus apache2 avahi-daemon \
-    swig git wireguard wireguard-tools xdg-utils curl xbindkeys xdotool
+    swig git wireguard wireguard-tools xdg-utils curl xbindkeys xdotool kbd
 
   if ! command -v chromium-browser >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
     echo "Installing Chromium for SG1 desktop webview"

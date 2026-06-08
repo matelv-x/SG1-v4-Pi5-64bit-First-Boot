@@ -228,7 +228,7 @@ install_system_packages() {
   as_root apt-get install --no-install-recommends -y \
     python3-dev python3-venv python3-pip python3-lgpio liblgpio-dev \
     libasound2-dev apache2 avahi-daemon swig git \
-    wireguard wireguard-tools
+    wireguard wireguard-tools kbd
 }
 
 install_app_files() {
