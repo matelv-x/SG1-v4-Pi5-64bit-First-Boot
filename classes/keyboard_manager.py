@@ -69,7 +69,6 @@ class KeyboardManager:
         self.ask_for_input_thread.start()  # start
 
     def thread_keyboard_direct(self, stargate):
-        return
         """
         This function takes the stargate as input and listens for user input (from the DHD or keyboard).
         This function is run in parallel in its own thread.
