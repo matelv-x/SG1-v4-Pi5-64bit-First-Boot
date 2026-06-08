@@ -191,12 +191,12 @@ class StargateAudio:
     def get_usb_audio_device_card_number():
         """
         This function gets the card number for the USB audio adapter.
-        :return: It will return a number (string) that should correspond to the card number for the USB adapter. If it can't find it, it returns 1
+        :return: It will return a number (string) that should correspond to the card number for the USB adapter. If it can't find it, it returns None
         """
         for card_number, line in StargateAudio.get_audio_cards():
             if 'USB' in line.upper():
                 return card_number
-        return 1
+        return None
 
     @staticmethod
     def get_hdmi_audio_device_card_number():
@@ -225,7 +225,19 @@ class StargateAudio:
     def get_configured_audio_device_card_number(self):
         if self.cfg.get('audio_hdmi'):
             return self.get_hdmi_audio_device_card_number()
-        return self.get_usb_audio_device_card_number()
+
+        usb_card = self.get_usb_audio_device_card_number()
+        if usb_card is not None:
+            return usb_card
+
+        hdmi_card = self.get_hdmi_audio_device_card_number()
+        if hdmi_card is not None:
+            return hdmi_card
+
+        cards = self.get_audio_cards()
+        if cards:
+            return cards[0][0]
+        return 0
 
     @staticmethod
     def get_active_audio_card_number():
