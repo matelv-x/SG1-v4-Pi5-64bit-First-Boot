@@ -1,75 +1,105 @@
-from classes.DHD import DHDv2
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
 from time import sleep
 
-# Initiate the DHD object.
-dhd_port = "/dev/serial/by-id/usb-SparkFun_SparkFun_Pro_Micro_HIDPC-if00"
-dhd_serial_baud_rate = 115200
-dhd = DHDv2(dhd_port, dhd_serial_baud_rate)
-dhd.setBrightnessCenter(100)
-dhd.setBrightnessSymbols(3)
-dhd.setAllPixelsToColor(0, 0, 0)
-dhd.latch()
+from serial.serialutil import SerialException
 
-# Run through all the DHD key lights
-for led in reversed(range(1, 39,)):
-    dhd.setPixel_use_LED_id(led, 250, 117, 0)
+APP_ROOT = Path(__file__).resolve().parents[1]
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
+from classes.StargateMilkyWay.dialers import DHDv2  # pylint: disable=wrong-import-position
+
+
+class ConsoleLog:
+    @staticmethod
+    def log(message):
+        print(message)
+
+
+def key_press():
+    import termios
+    import tty
+
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        return sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+
+def main():
+    dhd_port = DHDv2.get_dhd_port()
+    if not dhd_port:
+        print("No DHDv2 serial port found.")
+        return 1
+
+    try:
+        dhd = DHDv2(dhd_port, 115200, ConsoleLog())
+    except SerialException as exc:
+        print(f"Could not connect to DHDv2 on {dhd_port}: {exc}")
+        return 1
+
+    dhd.set_brightness_center(100)
+    dhd.set_brightness_symbols(3)
+    dhd.set_all_pixels_to_color(0, 0, 0)
     dhd.latch()
-    sleep(0.15)
-    dhd.setPixel_use_LED_id(led, 0, 0, 0)
+
+    for led in reversed(range(1, 39)):
+        dhd.set_pixel_use_led_id(led, 250, 117, 0)
+        dhd.latch()
+        sleep(0.15)
+        dhd.set_pixel_use_led_id(led, 0, 0, 0)
+        dhd.latch()
+
+    dhd.set_pixel_use_led_id(0, 255, 0, 0)
     dhd.latch()
-# The centre button
-dhd.setPixel_use_LED_id(0, 255, 0, 0)
-dhd.latch()
-sleep(2)
-dhd.clearAllPixels()
-dhd.latch()
+    sleep(2)
+    dhd.clear_all_pixels()
+    dhd.latch()
 
-## the dictionary containing the key to symbol-number relations. https://thestargateproject.com/symbols_overview.pdf
-key_symbol_map = {'8':1, 'C':2, 'V':3, 'U':4, 'a':5, '3':6, '5':7, 'S':8, 'b':9, 'K':10, 'X':11, 'Z':12,
-                  'E':14, 'P':15, 'M':16, 'D':17, 'F':18, '7':19, 'c':20, 'W':21, '6':22, 'G':23, '4':24,
-                  'B':25, 'H':26, 'R':27, 'L':28, '2':29, 'N':30, 'Q':31, '9':32, 'J':33, '0':34, 'O':35,
-                  'T':36, 'Y':37, '1':38, 'I':39, 'A':0
-                  }
-def ask_for_input():
-    """
-    This function collects key inputs from the user, and does actions based on input.
-    :return: Nothing is returned
-    """
-    def key_press():
-        """
-        This helper function stops the program (thread) and waits for a single keypress.
-        :return: The pressed key is returned.
-        """
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+    key_symbol_map = {
+        "8": 1, "C": 2, "V": 3, "U": 4, "a": 5, "3": 6, "5": 7, "S": 8, "b": 9,
+        "K": 10, "X": 11, "Z": 12, "E": 14, "P": 15, "M": 16, "D": 17, "F": 18,
+        "7": 19, "c": 20, "W": 21, "6": 22, "G": 23, "4": 24, "B": 25, "H": 26,
+        "R": 27, "L": 28, "2": 29, "N": 30, "Q": 31, "9": 32, "J": 33, "0": 34,
+        "O": 35, "T": 36, "Y": 37, "1": 38, "I": 39, "A": 0,
+    }
 
-    active = [] # keep a list of pressed DHD keys.
-    while True:  # Keep running
-        key = key_press()  # Save the input as a variable
+    print("DHD LED test is active. Press DHD buttons to toggle LEDs. Press '-' or Ctrl+C to exit.")
+    active = []
 
-        # convert key press to symbol_number. https://thestargateproject.com/symbols_overview.pdf
-        symbol_number = key_symbol_map[str(key)]
+    try:
+        while True:
+            key = key_press()
+            if key == "-":
+                break
 
-        # Toggle the light for the pressed key
-        if symbol_number not in active:
-            active.append(symbol_number)
-            if symbol_number == 0:
-                dhd.setPixel(symbol_number, 255, 0, 0)
-                dhd.latch()
+            try:
+                symbol_number = key_symbol_map[key]
+            except KeyError:
+                print(f"Ignored key: {key!r}")
+                continue
+
+            if symbol_number not in active:
+                active.append(symbol_number)
+                color = (255, 0, 0) if symbol_number == 0 else (250, 117, 0)
+                dhd.set_pixel(symbol_number, *color)
             else:
-                dhd.setPixel(symbol_number, 250, 117, 0)
-                dhd.latch()
-        else:
-            active.remove(symbol_number)
-            dhd.setPixel(symbol_number, 0, 0, 0)
+                active.remove(symbol_number)
+                dhd.clear_pixel(symbol_number)
             dhd.latch()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        dhd.clear_all_pixels()
+        dhd.latch()
 
-# Run the DHD test script!
-ask_for_input()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
