@@ -312,8 +312,11 @@ class Stargate:
                 self.log.log(f'INCOMING Wormhole from {self.connected_planet_name} established')
 
                 # Log the connection!
-                # TODO: hook this up!
-                #self.dialing_log.established_inbound( self.inbound_dialer)
+                self.dialing_log.established_inbound(
+                    getattr(self, "fan_gate_incoming_address", None),
+                    getattr(self, "connected_planet_name", None),
+                    getattr(self, "fan_gate_incoming_ip", None)
+                )
 
             else:
                 self.log.log('Incoming address is NOT a match to Local Gate Address!')

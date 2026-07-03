@@ -57,11 +57,12 @@ class DialingLog():
         # Update Rollbar
         rollbar.report_message('Failed Outbound Dialing', 'info')
 
-    def established_inbound(self, dialing_gate_address):
+    def established_inbound(self, dialing_gate_address=None, gate_name=None, source_ip=None):
         self.current_activity['activity'] = "Inbound"
         self.current_activity['start_time'] = self.__get_time_now()
-        self.current_activity['dialer_address'] = dialing_gate_address
+        self.current_activity['dialer_address'] = dialing_gate_address or gate_name or source_ip or "Unknown"
         self.current_activity['receiver_address'] = self.addr_manager.get_book().get_local_address()
+        self.current_activity['remote_gate_type'] = "INBOUND"
         self.log.log("Dialing Log: Established Inbound")
 
         # Update the Summary
