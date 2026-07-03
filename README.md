@@ -8,11 +8,11 @@ Tested target: **Raspberry Pi OS 64-bit based on Debian Trixie**. Debian Bookwor
 
 This repository is public so Raspberry Pi 5 users can install the first-boot package directly.
 
-## What this is
+## What this is,
 
 This is a complete first-boot SG1 v4 package prepared for Pi 5 hardware profiles, including xinux87's PCA9685 servo chevrons matelv-x's/codex TMC2209 STEP/DIR glyph-ring stepper profile.
 
-## Before installing this first-boot package
+## Before installing this first-boot package,
 
 Do this first. The installer assumes Raspberry Pi OS is already installed, booted once, and connected to the network.
 
