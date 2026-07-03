@@ -1,5 +1,7 @@
 # SG1 v4 Pi 5 64-bit First Boot
 
+[![Downloads](https://img.shields.io/github/downloads/matelv-x/SG1-v4-Pi5-64bit-First-Boot/total?label=downloads)](https://github.com/matelv-x/SG1-v4-Pi5-64bit-First-Boot/releases)
+
 First-boot SG1 v4 installer/fork for **Raspberry Pi 5 only** running **64-bit Raspberry Pi OS**.
 
 Tested target: **Raspberry Pi OS 64-bit based on Debian Trixie**. Debian Bookworm is the previous Raspberry Pi OS generation and is **not verified** for this first-boot package.
